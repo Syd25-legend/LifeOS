@@ -281,7 +281,7 @@ const Calendar = () => {
                       </div>
                     ) : dayTasks.length > 0 ? (
                       <div className="flex flex-col gap-2 mt-2">
-                        {dayTasks.map((t, i) => (
+                        {dayTasks.map((t) => (
                           <div
                             key={t.id}
                             className="p-3 rounded-xl bg-white/5 border border-white/5 text-xs text-gray-300"
