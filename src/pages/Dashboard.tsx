@@ -1,27 +1,15 @@
 import { useState, useEffect } from "react";
-import {
-  ChevronDown,
-  MoreHorizontal,
-  User,
-  Zap,
-  Trophy,
-  TrendingUp,
-} from "lucide-react";
-import { BarChart, Bar, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { MoreHorizontal, User, Zap, Trophy } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import HabitHeatmap from "../components/HabitHeatmap";
-
-interface Project {
-  name: string;
-  intensity: "high" | "medium" | "low";
-  completion_percentage: number;
-}
+import FocusTracker from "../components/bpt/FocusTracker";
+import ProjectHealthCard from "../components/projects/ProjectHealth";
+import AntiToDoLog from "../components/wins/AntiToDoLog";
 
 const Dashboard = () => {
   const [userEmail, setUserEmail] = useState<string>("");
   const [userId, setUserId] = useState<string | null>(null);
   const [analysisData, setAnalysisData] = useState<any[]>([]);
-  const [projectsData, setProjectsData] = useState<any[]>([]);
 
   // New Stats
   const [monthlyCompletion, setMonthlyCompletion] = useState(0);
@@ -44,7 +32,7 @@ const Dashboard = () => {
   const fetchData = async (uid: string) => {
     // 1. Fetch Daily Analysis (Timeline + Deep Work Correlation)
     const { data: analysis } = await supabase
-      .from("daily_logs") // Changed from daily_analysis to daily_logs for deep_work_hours
+      .from("daily_logs")
       .select("date, productivity_score, deep_work_hours")
       .eq("user_id", uid)
       .order("date", { ascending: false })
@@ -74,10 +62,6 @@ const Dashboard = () => {
       setAnalysisData(formattedAnalysis);
 
       // --- Correlation Logic ---
-      // Find days with > 80% habit completion (approx)
-      // Since we don't have total active habits history, we assume logs.count per day.
-      // Let's simplified: "High Habit Days" = days with > 3 habit logs (assuming 4-5 total).
-
       const logsByDate: Record<string, number> = {};
       logs.forEach((l) => {
         logsByDate[l.date] = (logsByDate[l.date] || 0) + 1;
@@ -93,7 +77,6 @@ const Dashboard = () => {
         const habitCount = logsByDate[dateStr] || 0;
         const work = day.deep_work_hours || 0;
 
-        // Threshold for "Good Habit Day" = 3 habits
         if (habitCount >= 3) {
           goodDaysWork += work;
           goodDaysCount++;
@@ -112,8 +95,6 @@ const Dashboard = () => {
       });
 
       // --- Monthly Completion ---
-      // Simple: (logs this month) / (days passed * approx 4 habits)
-      // This is a rough heuristic for the dashboard card.
       const startOfMonth = new Date(
         new Date().getFullYear(),
         new Date().getMonth(),
@@ -127,23 +108,6 @@ const Dashboard = () => {
       setMonthlyCompletion(
         Math.min(100, Math.round((logsThisMonth / estimatedTotal) * 100))
       );
-    }
-
-    // 2. Fetch Projects
-    const { data: projects } = await supabase
-      .from("projects")
-      .select("name, intensity, completion_percentage")
-      .eq("user_id", uid)
-      .eq("status", "active");
-
-    if (projects) {
-      const formattedProjects = projects.map((p) => ({
-        name: p.name,
-        value: p.completion_percentage,
-        intensity:
-          p.intensity <= 3 ? "low" : p.intensity <= 7 ? "medium" : "high",
-      }));
-      setProjectsData(formattedProjects);
     }
   };
 
@@ -225,51 +189,19 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Projects Intensity Card */}
-          <div className="col-span-2 bg-[#121212] rounded-3xl p-5 border border-[#1f1f1f] flex flex-col">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="text-gray-400 font-medium uppercase text-xs tracking-wider flex items-center gap-2">
-                <TrendingUp size={14} /> PROJECT INTENSITY
-              </h3>
-              <MoreHorizontal
-                size={20}
-                className="text-gray-500 cursor-pointer"
-              />
-            </div>
-            <div className="flex-1 w-full min-h-[100px]">
-              {projectsData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={projectsData}>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#1C1C1C",
-                        border: "1px solid #333",
-                        borderRadius: "8px",
-                      }}
-                      cursor={{ fill: "transparent" }}
-                    />
-                    <Bar dataKey="value" radius={[20, 20, 20, 20]} barSize={40}>
-                      {projectsData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={
-                            entry.intensity === "high"
-                              ? "#a3e635"
-                              : entry.intensity === "medium"
-                              ? "#fb923c"
-                              : "#ffffff"
-                          }
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500 text-sm">
-                  No active projects.
-                </div>
-              )}
-            </div>
+          {/* Project Health Dashboard (Replaces Intensity) */}
+          <div className="col-span-2">
+            <ProjectHealthCard />
+          </div>
+
+          {/* Biological Prime Time Tracker */}
+          <div className="col-span-2">
+            <FocusTracker />
+          </div>
+
+          {/* Anti-To-Do List */}
+          <div className="col-span-2">
+            <AntiToDoLog />
           </div>
         </div>
 

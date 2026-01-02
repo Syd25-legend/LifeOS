@@ -1,11 +1,21 @@
 import React from "react";
-import { Check, Trash2, Plus, GripVertical } from "lucide-react";
+import {
+  Check,
+  Trash2,
+  Plus,
+  GripVertical,
+  Zap,
+  Battery,
+  ZapOff,
+} from "lucide-react";
+import { EnergyBadge } from "../tasks/EnergyScheduler";
 
 interface Task {
   id: string;
   title: string;
   is_completed: boolean;
   list_id?: string;
+  energy_level?: "High" | "Medium" | "Low";
 }
 
 interface TaskCardProps {
@@ -13,7 +23,11 @@ interface TaskCardProps {
   title: string;
   tasks: Task[];
   onToggle: (taskId: string) => void;
-  onAdd: (title: string, listId?: string) => void;
+  onAdd: (
+    title: string,
+    listId?: string,
+    energyLevel?: "High" | "Medium" | "Low"
+  ) => void;
   onDelete: (taskId: string) => void;
   onRenameList?: (listId: string, newTitle: string) => void; // Optional for dynamic lists
   onDeleteList?: (listId: string) => void;
@@ -30,14 +44,18 @@ const TaskCard: React.FC<TaskCardProps> = ({
   onDeleteList,
 }) => {
   const [newTask, setNewTask] = React.useState("");
+  const [selectedEnergy, setSelectedEnergy] = React.useState<
+    "High" | "Medium" | "Low" | undefined
+  >(undefined);
   const [isEditingTitle, setIsEditingTitle] = React.useState(false);
   const [editedTitle, setEditedTitle] = React.useState(title);
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (newTask.trim()) {
-      onAdd(newTask, listId);
+      onAdd(newTask, listId, selectedEnergy);
       setNewTask("");
+      setSelectedEnergy(undefined);
     }
   };
 
@@ -111,15 +129,18 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   <Check size={12} className="text-black" />
                 )}
               </div>
-              <span
-                className={`text-base font-medium transition-all ${
-                  task.is_completed
-                    ? "text-zinc-600 line-through"
-                    : "text-zinc-300 group-hover:text-white"
-                }`}
-              >
-                {task.title}
-              </span>
+              <div className="flex flex-col">
+                <span
+                  className={`text-base font-medium transition-all ${
+                    task.is_completed
+                      ? "text-zinc-600 line-through"
+                      : "text-zinc-300 group-hover:text-white"
+                  }`}
+                >
+                  {task.title}
+                </span>
+                <EnergyBadge level={task.energy_level} />
+              </div>
             </div>
             <button
               onClick={() => onDelete(task.id)}
@@ -132,7 +153,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
       </div>
 
       {/* Add Task Input */}
-      <form onSubmit={handleAdd} className="mt-auto relative">
+      <form onSubmit={handleAdd} className="mt-auto relative space-y-2">
         <input
           type="text"
           placeholder="Add a new task..."
@@ -140,13 +161,41 @@ const TaskCard: React.FC<TaskCardProps> = ({
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
         />
-        <button
-          type="submit"
-          disabled={!newTask.trim()}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white disabled:opacity-30"
-        >
-          <Plus size={16} />
-        </button>
+
+        {/* Energy Selector */}
+        <div className="flex gap-2 justify-end">
+          {(["High", "Medium", "Low"] as const).map((level) => (
+            <button
+              key={level}
+              type="button"
+              onClick={() =>
+                setSelectedEnergy(selectedEnergy === level ? undefined : level)
+              }
+              className={`p-1.5 rounded-full border transition-all ${
+                selectedEnergy === level
+                  ? level === "High"
+                    ? "bg-red-900/50 border-red-500 text-red-400"
+                    : level === "Medium"
+                    ? "bg-yellow-900/50 border-yellow-500 text-yellow-400"
+                    : "bg-green-900/50 border-green-500 text-green-400"
+                  : "bg-zinc-900/50 border-zinc-700 text-zinc-600 hover:text-zinc-400"
+              }`}
+              title={`Tag as ${level} Energy`}
+            >
+              {level === "High" && <Zap size={12} />}
+              {level === "Medium" && <Battery size={12} />}
+              {level === "Low" && <ZapOff size={12} />}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="p-1.5 ml-1 rounded-full bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition-colors"
+            onClick={handleAdd}
+            disabled={!newTask.trim()}
+          >
+            <Plus size={16} />
+          </button>
+        </div>
       </form>
     </div>
   );

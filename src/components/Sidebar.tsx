@@ -21,7 +21,11 @@ const Sidebar = () => {
   return (
     <div className="w-20 h-screen bg-black/40 border-r border-white/10 flex flex-col items-center py-8 z-50 backdrop-blur-md sticky top-0 flex-shrink-0">
       <div className="mb-8 p-2 rounded-xl bg-white/5 border border-white/10">
-        <div className="w-6 h-6 bg-white rounded-full"></div>
+        <img
+          src="/logo.png"
+          alt="LifeOS Logo"
+          className="w-6 h-6 object-contain"
+        />
       </div>
 
       <nav className="flex-1 space-y-6 flex flex-col items-center w-full">
